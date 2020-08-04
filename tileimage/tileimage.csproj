@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Crater.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="MathEx.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tile.cs" />

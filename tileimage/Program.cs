@@ -32,24 +32,25 @@ namespace tileimage
             [Option('i', "info", Required = false, HelpText = "Display file info.")]
             public bool ShowInfo { get; set; }
 
-            [Option('x', "ridgescale", Required = false, HelpText = "Crater ridge height scale.", Default = 1)]
-            public float RidgeScale { get; set; }
-
-            [Option('y', "craterscale", Required = false, HelpText = "Crater depth scale.", Default = 1)]
-            public float CraterScale { get; set; }
-
             [Option('z', "craters", Required = false, HelpText = "Numbers of craters.", Default = 100)]
             public int Craters { get; set; }
 
             [Option('d', "seed", Required = false, HelpText = "Random seed.", Default = 1)]
             public int Seed { get; set; }
-        }
+
+            [Option('m', "minradius", Required = false, HelpText = "Min crater radius.", Default = 5)]
+            public int CraterMin { get; set; }
+
+            [Option('x', "maxradius", Required = false, HelpText = "Max crater radius.", Default = 30)]
+            public int CraterMax { get; set; }
+
+       }
 
         static void Main(string[] args)
         {
-            //try
-            //{
-            Parser.Default.ParseArguments<Options>(args)
+            try
+            {
+                Parser.Default.ParseArguments<Options>(args)
                      .WithParsed<Options>(o =>
                      {
                          if (o.ShowInfo)
@@ -72,12 +73,12 @@ namespace tileimage
                              Console.WriteLine(item.ToString());
                          }
                      });
-            //}
-            //catch (Exception ex)
-            //{
+            }
+            catch (Exception ex)
+            {
 
-            //    Console.WriteLine(ex.Message);
-            //}
+                Console.WriteLine(ex.Message);
+            }
 
         }
 
@@ -192,13 +193,15 @@ namespace tileimage
 
             int Height = (int)FreeImage.GetHeight(dib);
             int Width = (int)FreeImage.GetWidth(dib);
-            
-            for (int i = 0; i < 500; i++)
+
+            for (int i = 0; i < o.Craters; i++)
             {
                 int x = rng.Next(0, Width);
                 int y = rng.Next(0, Height);
-                int radius = rng.Next(5, 30);
+                double alpha = rng.NextDouble();
+                int radius = (int)MathEx.Lerp(o.CraterMin, o.CraterMax, MathEx.EaseIn(alpha, 10));
                 drawCrater(dib, x, y, radius, Width, Height, o);
+                Console.WriteLine($"{i + 1}. {x},{y} radius: {radius}");
             }
 
         }
@@ -206,6 +209,9 @@ namespace tileimage
         private static void drawCrater(FIBITMAP dib, int x, int y, int radius, int width, int height, Options opt)
         {
             Crater crater = new Crater(x, y, radius);
+
+            // scale x/y to z so we can scale crater depth
+            double scale = ushort.MaxValue / Math.Min(width, height);
 
             // generate all points inside circle
             List<PointXY> craterPoints = new List<PointXY>();
@@ -234,11 +240,13 @@ namespace tileimage
             }
 
             // get highest/lowest point in the crater
+            double scalealpha = radius / opt.CraterMax;
             PointXY low = craterPoints.OrderBy(o => dib.GetHeight(o)).First();
             ushort lowHeight = dib.GetHeight(low);
             PointXY high = craterPoints.OrderByDescending(o => dib.GetHeight(o)).First();
             ushort highHeight = dib.GetHeight(high);
-            int lowPoint = Math.Max(0, lowHeight - (int)(crater.PenetrationDepth * opt.CraterScale));
+            int lowPoint = Math.Max(0, lowHeight - (int)(radius * scale));
+            
 
             // set crater pixel heights
             foreach (var item in craterPoints)
@@ -246,13 +254,28 @@ namespace tileimage
                 //get nearest ridge point height
                 PointXY nearRidge = craterRidgePoints.OrderBy(o => crater.dist(item, o)).First();
                 //double k = crater.dist(item, nearRidge);
-                int ridgeHeight = dib.GetHeight(nearRidge) + (int)crater.RidgeHeight;
+                int ridgeHeight = dib.GetHeight(nearRidge);
+                ridgeHeight += (int)(Math.Max(1,(radius / 3)) * scale);
                 //int h = dib.GetHeight(item);
                 double d = crater.DistanceFromCenter(item);
                 double alpha = d / radius;
-                double newHeight = crater.Lerp(lowPoint, ridgeHeight, crater.EaseIn(alpha));
+                double newHeight = MathEx.Lerp(lowPoint, ridgeHeight, MathEx.EaseIn(alpha, 5));
                 dib.SetHeight(item, (ushort)(newHeight));
-            }
+            }            
+            
+            // set crater pixel heights
+            //foreach (var item in craterPoints)
+            //{
+            //    //get nearest ridge point height
+            //    PointXY nearRidge = craterRidgePoints.OrderBy(o => crater.dist(item, o)).First();
+            //    //double k = crater.dist(item, nearRidge);
+            //    int ridgeHeight = dib.GetHeight(nearRidge) + (int)(MathEx.Lerp(opt.RidgeHeightMin, opt.RidgeHeightMax, scalealpha));
+            //    //int h = dib.GetHeight(item);
+            //    double d = crater.DistanceFromCenter(item);
+            //    double alpha = d / radius;
+            //    double newHeight = MathEx.Lerp(lowPoint, ridgeHeight, MathEx.EaseIn(alpha));
+            //    dib.SetHeight(item, (ushort)(newHeight));
+            //}
 
 
 
@@ -263,7 +286,7 @@ namespace tileimage
             foreach (var item in craterRidgePoints)
             {
                 int h = dib.GetHeight(item);
-                dib.SetHeight(item, Math.Min(ushort.MaxValue, (ushort)(h + crater.RidgeHeight * opt.RidgeScale)));
+                dib.SetHeight(item, Math.Min(ushort.MaxValue, (ushort)(h + (int)(Math.Max(1, (radius / 3)) * scale))));
             }
 
             // smooth

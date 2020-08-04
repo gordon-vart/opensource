@@ -20,39 +20,11 @@ namespace tileimage
             this.radius = radius;
         }
 
-        public double RidgeHeight
-        {
-            get
-            {
-                return radius / 4;
-            }
-        }
-
-        public double PenetrationDepth
-        {
-            get
-            {
-                return radius / 3;
-            }
-        }
-       
-
-        public double Lerp(double a, double b, double alpha)
-        {
-            alpha = alpha.Clamp(0, 1);
-            return a * (1 - alpha) + b * alpha;
-        }
-
-        public double EaseIn(double v)
-        {
-            double k = Math.Pow(v, 3);
-            return k;
-        }
-
+        
         public bool IsRidge(PointXY p)
         {
             double d = DistanceFromCenter(p);
-            return d < radius && d.NearlyEqual(radius, 5);
+            return d < radius && d.NearlyEqual(radius, 3);
         }
 
         public bool IsInside(PointXY p)
