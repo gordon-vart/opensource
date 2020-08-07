@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,6 +14,8 @@ namespace tileimage
             alpha = alpha.Clamp(0, 1);
             return a * (1 - alpha) + b * alpha;
         }
+
+
 
         public static double EaseIn(double v, double power = 3)
         {
