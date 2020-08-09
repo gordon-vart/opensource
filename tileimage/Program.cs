@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CommandLine;
@@ -56,14 +57,14 @@ namespace tileimage
                  {
                      if (o.ShowInfo)
                      {
-                             // display info
-                             image_info(o);
+                         // display info
+                         image_info(o);
                      }
 
                      if (o.Tile)
                      {
-                             // tile
-                             tile_image(o);
+                         // tile
+                         tile_image(o);
                      }
 
                  })
@@ -141,12 +142,14 @@ namespace tileimage
             // craterize
             if (o.Craters > 0)
             {
-                craterize(dib, o);
+                CraterEngine ce = new CraterEngine() { dib = dib, minRadius = o.CraterMin, maxRadius = o.CraterMax, numCraters = o.Craters, seed = o.Seed };
+                ce.BuildCraters(Path.Combine(Path.GetDirectoryName(o.Filename), "crater-debug.bmp"));
+
+                string fn = Path.Combine(Path.GetDirectoryName(o.Filename), "crater.png");
+                FreeImage.Save(FREE_IMAGE_FORMAT.FIF_PNG, dib, fn, FREE_IMAGE_SAVE_FLAGS.DEFAULT);
             }
 
 
-            string fn = Path.Combine(Path.GetDirectoryName(o.Filename), "crater.png");
-            FreeImage.Save(FREE_IMAGE_FORMAT.FIF_PNG, dib, fn, FREE_IMAGE_SAVE_FLAGS.DEFAULT);
 
 
             // calc max square size
@@ -189,132 +192,6 @@ namespace tileimage
                 string tilename = string.Format(@"tile_x{0}_y{1}.bmp", tile.x, tile.y);
                 tilename = Path.Combine(path, tilename);
                 writesection(tilename, tile.pixels);
-            }
-        }
-
-        private static void craterize(FIBITMAP dib, Options o)
-        {
-            Random rng = new Random(o.Seed);
-            List<Crater> craters = new List<Crater>();
-
-            int Height = (int)FreeImage.GetHeight(dib);
-            int Width = (int)FreeImage.GetWidth(dib);
-
-            for (int c = 0; c < o.Craters; c++)
-            {
-                int x = rng.Next(0, Width);
-                int y = rng.Next(0, Height);
-                double alpha = rng.NextDouble();
-                int radius = (int)MathEx.Lerp(o.CraterMin, o.CraterMax, MathEx.EaseIn(alpha, 10));
-                Crater crater = new Crater(x, y, radius);
-                craters.Add(crater);
-
-            }
-
-            // generate craters
-            if (false)
-            {
-                foreach (var item in craters)
-                {
-                    item.GeneratePixels2(Width, Height);
-                }
-            }
-            else
-            {
-                Parallel.ForEach(craters, (c) =>
-                {
-                    c.GeneratePixels2(Width, Height);
-                });
-            }
-
-
-            // draw craters
-            int i = 0;
-            foreach (var item in craters)
-            {
-                drawCrater(dib, item, Width, Height, o);
-                Console.WriteLine($"{i + 1}. {item.origin.x},{item.origin.y} radius: {item.radius}");
-                i++;
-            }
-        }
-
-        private static void drawCrater(FIBITMAP dib, Crater crater, int width, int height, Options opt)
-        {
-            double radius = crater.radius;
-
-            // scale x/y to z so we can scale crater depth
-            double scale = ushort.MaxValue / Math.Min(width, height);
-
-            // generate crater border
-
-            // get highest/lowest point in the crater
-            double scalealpha = radius / opt.CraterMax;
-            PointXY low = crater.craterPoints.OrderBy(o => dib.GetHeight(o)).First();
-            ushort lowHeight = dib.GetHeight(low);
-            PointXY high = crater.craterPoints.OrderByDescending(o => dib.GetHeight(o)).First();
-            ushort highHeight = dib.GetHeight(high);
-            int lowPoint = Math.Max(0, lowHeight - (int)(radius * scale));
-
-            // draw inside
-            // set crater pixel heights
-            foreach (var item in crater.craterPoints)
-            {
-                //get nearest ridge point height
-                PointXY nearRidge = crater.craterRidgePoints.OrderBy(o => crater.dist(item, o)).First();
-                //double k = crater.dist(item, nearRidge);
-                int ridgeHeight = dib.GetHeight(nearRidge);
-                ridgeHeight += (int)(Math.Max(1, (radius / 3)) * scale);
-                //int h = dib.GetHeight(item);
-                double d = crater.DistanceFromCenter(item);
-                double alpha = d / radius;
-                double newHeight = MathEx.Lerp(lowPoint, ridgeHeight, MathEx.EaseIn(alpha, 5));
-                dib.SetHeight(item, (ushort)(newHeight));
-            }
-
-
-            // draw ridge
-            foreach (var item in crater.craterRidgePoints)
-            {
-                int h = dib.GetHeight(item);
-                dib.SetHeight(item, Math.Min(ushort.MaxValue, (ushort)(h + (int)(Math.Max(1, (radius / 3)) * scale))));
-                dib.SetHeight(item, ushort.MaxValue);
-            }
-
-            // smooth
-            if (true)
-            {
-                for (int cx = (int)(crater.origin.x - radius); cx < (int)(crater.origin.x + radius); cx++)
-                {
-                    for (int cy = (int)(crater.origin.y - radius); cy < (int)(crater.origin.y + radius); cy++)
-                    {
-                        List<int> k = new List<int>();
-                        k.Add(GetPointHeight(dib, cx + 1, cy, width, height));
-                        k.Add(GetPointHeight(dib, cx - 1, cy, width, height));
-                        k.Add(GetPointHeight(dib, cx, cy + 1, width, height));
-                        k.Add(GetPointHeight(dib, cx, cy - 1, width, height));
-                        int valid = k.Count(o => o > 0);
-                        int total = k.Where(o => o > 0).Sum();
-                        PointXY p = new PointXY(cx, cy);
-                        if (valid > 0)
-                        {
-                            dib.SetHeight(p, (ushort)(total / valid));
-                        }
-                    }
-                }
-            }
-
-        }
-
-        private static int GetPointHeight(FIBITMAP dib, double x, double y, int width, int height)
-        {
-            if (x >= 0 && y >= 0 && x < width && y < height)
-            {
-                PointXY p = new PointXY(x, y);
-                return dib.GetHeight(p);
-            }
-            else
-            {
-                return -1;
             }
         }
 
