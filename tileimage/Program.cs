@@ -46,13 +46,16 @@ namespace tileimage
             [Option('x', "maxradius", Required = false, HelpText = "Max crater radius.", Default = 30)]
             public int CraterMax { get; set; }
 
+            [Option("zscale", Required = false, HelpText = "Scale height on Z axis.", Default = 100)]
+            public int ZScale { get; set; }
+
         }
 
         static void Main(string[] args)
         {
-            //try
-            //{
-            Parser.Default.ParseArguments<Options>(args)
+            try
+            {
+                Parser.Default.ParseArguments<Options>(args)
                  .WithParsed<Options>(o =>
                  {
                      if (o.ShowInfo)
@@ -75,37 +78,15 @@ namespace tileimage
                          Console.WriteLine(item.ToString());
                      }
                  });
-            //}
-            //catch (Exception ex)
-            //{
-
-            //    Console.WriteLine(ex.Message);
-            //}
-
-        }
-
-        private static List<List<int>> LoadPixels(FIBITMAP dib)
-        {
-
-            int Height = (int)FreeImage.GetHeight(dib);
-            int Width = (int)FreeImage.GetWidth(dib);
-
-            List<List<int>> ImageData = new List<List<int>> { };
-            for (int y = 0; y < Height; y++)
+            }
+            catch (Exception ex)
             {
-                List<int> row = new List<int> { };
-                // Note: dib is stored upside down
-                Scanline<ushort> line = new Scanline<ushort>(dib, Height - 1 - y);
-                foreach (ushort pixel in line)
-                {
-                    row.Add(pixel);
-                }
-                ImageData.Add(row);
+
+                Console.WriteLine(ex.Message);
             }
 
-            return ImageData;
-
         }
+
 
         private static void image_info(Options o)
         {
@@ -128,16 +109,9 @@ namespace tileimage
 
         private static void tile_image(Options o)
         {
-            int xindex = 0;
-            int yindex = 0;
-            List<Tile> tiles = new List<Tile>();
-            FIBITMAP dib = FreeImage.LoadEx(o.Filename);
-
             // calc resolution of tile
             int tileSizeResolution = o.Components * o.Sections * o.Quads + 1;
-
-            int Height = (int)FreeImage.GetHeight(dib);
-            int Width = (int)FreeImage.GetWidth(dib);
+            FIBITMAP dib = FreeImage.LoadEx(o.Filename);
 
             // craterize
             if (o.Craters > 0)
@@ -149,88 +123,25 @@ namespace tileimage
                 FreeImage.Save(FREE_IMAGE_FORMAT.FIF_PNG, dib, fn, FREE_IMAGE_SAVE_FLAGS.DEFAULT);
             }
 
-
-
-
-            // calc max square size
-            int max_x = Width / tileSizeResolution;
-            int max_y = Height / tileSizeResolution;
-            int tilecount = Math.Min(max_x, max_y);
-            int cx, cy;
-            cx = cy = 0;
-
-            for (int y = 0; y < tilecount; y++)
+            // scale heights
+            for (uint i = 0; i < FreeImage.GetHeight(dib); i++)
             {
-                for (int x = 0; x < tilecount; x++)
+                Scanline<ushort> line = new Scanline<ushort>(dib, (int)i);
+                ushort[] data = line.Data;
+                for (int k = 0; k < data.Length; k++)
                 {
-                    Tile t = new Tile() { x = xindex, y = yindex };
-                    FIBITMAP section = FreeImage.Copy(dib, cx, cy, cx + tileSizeResolution, cy + tileSizeResolution);
-                    t.pixels = LoadPixels(section);
-
-                    FreeImage.UnloadEx(ref section);
-                    xindex++;
-                    cx += tileSizeResolution;
-
-                    tiles.Add(t);
+                    ushort v = data[k];
+                    ushort adj = (ushort)(v * (o.ZScale / 100.0f));
+                    data[k] = adj;
                 }
-                xindex = 0;
-                cx = 0;
-                yindex++;
-                cy += tileSizeResolution;
+                line.Data = data;
             }
-            FreeImage.UnloadEx(ref dib);
 
-            // stitch edges
-            StichEdges(tiles);
+            // tile
+            TileEngine te = new TileEngine(dib, Path.GetDirectoryName(o.Filename));
+            te.Tile(tileSizeResolution);
 
-            // write files
-            string path = Path.GetDirectoryName(o.Filename);
-            path = Path.Combine(path, "tiles");
-            Directory.CreateDirectory(path);
-            foreach (var tile in tiles)
-            {
-                string tilename = string.Format(@"tile_x{0}_y{1}.bmp", tile.x, tile.y);
-                tilename = Path.Combine(path, tilename);
-                writesection(tilename, tile.pixels);
-            }
         }
 
-        private static void StichEdges(List<Tile> tiles)
-        {
-            foreach (var tile in tiles)
-            {
-                tile.StitchEdges(tiles);
-            }
-        }
-
-        private static void writesection(string filename, List<List<int>> pixels)
-        {
-            string target = Path.GetFileNameWithoutExtension(filename) + ".raw";
-            target = Path.Combine(Path.GetDirectoryName(filename), target);
-
-            // clean up old file
-            if (File.Exists(target))
-            {
-                File.Delete(target);
-            }
-
-            using (Stream fs = File.OpenWrite(target))
-            {
-                using (BinaryWriter bw = new BinaryWriter(fs))
-                {
-                    for (int y = 0; y < pixels.Count; y++)
-                    {
-                        for (int x = 0; x < pixels[y].Count; x++)
-                        {
-                            int gray = pixels[y][x];
-                            UInt16 grayscale = Convert.ToUInt16(gray);
-                            bw.Write(grayscale);
-                        }
-                    }
-                    bw.Flush();
-                }
-            }
-
-        }
     }
 }

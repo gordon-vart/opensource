@@ -1,6 +1,8 @@
 ﻿using FreeImageAPI;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -26,6 +28,8 @@ namespace tileimage
             else if (val.CompareTo(max) > 0) return max;
             else return val;
         }
+
+
 
         public static ushort GetHeight(this FIBITMAP dib, Vector2 p)
         {
@@ -92,6 +96,23 @@ namespace tileimage
                 }
             }
 
+            return n.ToArray();
+        }
+        public static Vector2[] AllNeighbors(this Vector2 v, int dist)
+        {
+            List<Vector2> n = new List<Vector2>();
+
+            for (int x = dist * -1; x < dist + 1; x++)
+            {
+                for (int y = dist * -1; y < dist + 1; y++)
+                {
+                    var tmp = new Vector2(v.X + x, v.Y + y);
+                    if (!tmp.Equals(v))
+                    {
+                        n.Add(tmp);
+                    }
+                }
+            }
             return n.ToArray();
         }
     }

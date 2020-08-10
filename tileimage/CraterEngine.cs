@@ -1,4 +1,5 @@
-﻿using FreeImageAPI;
+﻿
+using FreeImageAPI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -42,7 +43,7 @@ namespace tileimage
                 int x = rng.Next(0, ImageWidth);
                 int y = rng.Next(0, ImageHeight);
                 double alpha = rng.NextDouble();
-                int radius = (int)MathEx.Lerp(minRadius, maxRadius, MathEx.EaseIn(alpha, 10));
+                int radius = (int)MathEx.Lerp(minRadius, maxRadius, MathEx.EaseIn(alpha, 6));
                 Crater crater = new Crater(x, y, radius) { bmp = debugbmp };
                 craters.Add(crater);
 
@@ -77,7 +78,7 @@ namespace tileimage
             }
 
             // debug
-            if(!string.IsNullOrEmpty(debugFilename))
+            if (!string.IsNullOrEmpty(debugFilename))
             {
                 debugbmp.Save(debugFilename);
             }
@@ -124,6 +125,9 @@ namespace tileimage
             {
                 int h = dib.GetHeight(item);
                 dib.SetHeight(item, Math.Min(ushort.MaxValue, (ushort)(h + (int)(Math.Max(1, (radius / 3)) * scale))));
+                
+                // debug
+                //dib.SetHeight(item, ushort.MaxValue);
             }
 
             // smooth
@@ -136,22 +140,46 @@ namespace tileimage
 
         private void Smooth(Crater crater)
         {
-            foreach (var i in crater.craterPoints.Union(crater.craterRidgePoints))
-            {
-                List<int> k = new List<int>();
-                foreach (var n in i.Neighbors(1))
-                {
-                    k.Add(GetPointHeight(n));
-                }
+            float xmin = crater.craterRidgePoints.Select(c => c.X).Min();
+            float xmax = crater.craterRidgePoints.Select(c => c.X).Max();
+            float ymin = crater.craterRidgePoints.Select(c => c.Y).Min();
+            float ymax = crater.craterRidgePoints.Select(c => c.Y).Max();
 
-                int valid = k.Count(o => o > 0);
-                int total = k.Where(o => o > 0).Sum();
-                Vector2 p = new Vector2(i.X, i.Y);
-                if (valid > 0)
+            // inflate by a few pixels
+            float offset = 5;
+            xmin = Math.Max(0, xmin - offset);
+            xmax = Math.Min(ImageWidth, xmax + offset);
+            ymin = Math.Max(0, ymin - offset);
+            ymax = Math.Min(ImageWidth, ymax + offset);
+
+            for (int x = (int)xmin; x < (int)xmax; x++)
+            {
+                for (int y = (int)ymin; y < (int)ymax; y++)
                 {
-                    dib.SetHeight(p, (ushort)(total / valid));
+                    Vector2 v = new Vector2(x, y);
+                    
+                    List<int> k = new List<int>();
+                    k.Add(GetPointHeight(v));
+                    foreach (var n in v.AllNeighbors(1))
+                    {
+                        k.Add(GetPointHeight(n));
+                    }
+
+                    int valid = k.Count(o => o > 0);
+                    int total = k.Where(o => o > 0).Sum();
+                    
+                    if (valid > 0)
+                    {
+                        dib.SetHeight(v, (ushort)(total / valid));
+                    }
                 }
             }
+
+
+            //string fn = @"c:\temp\ceres\section-blur.png";
+            //FreeImage.Save(FREE_IMAGE_FORMAT.FIF_PNG, dib, fn, FREE_IMAGE_SAVE_FLAGS.DEFAULT);
+
+            int f = 0;
         }
 
         private int GetPointHeight(Vector2 v)
