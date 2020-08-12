@@ -53,11 +53,21 @@ namespace openheightmaptool
             {
                 tslInfo.Text = "";
 
+                // Validate number of vertices per tile
                 int k = o.VerticesPerTile & (o.VerticesPerTile - 1);
                 if (k != 0)
                 {
                     throw new Exception($"VerticesPerTile value { o.VerticesPerTile} must be a power of 2.");
                 }
+
+                // Validate number of vertices per tile
+
+                if (o.VerticesPerTile < 8)
+                {
+                    throw new Exception($"VerticesPerTile value { o.VerticesPerTile} must be greater than or equal to 8.");
+                }
+
+                // load
                 FIBITMAP dib = FreeImage.LoadEx(o.Filename);
 
                 // calc resolution of tile
@@ -66,6 +76,12 @@ namespace openheightmaptool
                 // show tiles
                 FREE_IMAGE_TYPE it = FreeImage.GetImageType(dib);
                 uint bpp = FreeImage.GetBPP(dib);
+
+                // Warn if bits-per-pixel is less than 16
+                if (bpp != 16)
+                {
+                    tslInfo.Text = $"Warning! The image provided it's not 16 bits per pixel. 16 bpp grayscale image needed.";
+                }
 
                 groupBox1.Text = $"{Path.GetFileName(o.Filename)}, {FreeImage.GetWidth(dib)}x{FreeImage.GetHeight(dib)}, {bpp} bpp";
                 Image i = Image.FromFile(o.Filename);
