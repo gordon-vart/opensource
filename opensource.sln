@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.1169
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tileimage", "tileimage\tileimage.csproj", "{5ACC6916-C3EE-4773-9F96-E6C11C09BCCF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "openheightmaptool", "openheightmaptool\openheightmaptool.csproj", "{68720E40-2511-4A7B-BA4D-DBBE21976924}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5ACC6916-C3EE-4773-9F96-E6C11C09BCCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5ACC6916-C3EE-4773-9F96-E6C11C09BCCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5ACC6916-C3EE-4773-9F96-E6C11C09BCCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5ACC6916-C3EE-4773-9F96-E6C11C09BCCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68720E40-2511-4A7B-BA4D-DBBE21976924}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68720E40-2511-4A7B-BA4D-DBBE21976924}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68720E40-2511-4A7B-BA4D-DBBE21976924}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68720E40-2511-4A7B-BA4D-DBBE21976924}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

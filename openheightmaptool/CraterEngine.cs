@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace tileimage
 {
+    public delegate void statusChangedDelegate(object sender, string msg);
     class CraterEngine
     {
         public Bitmap debugbmp { get; set; }
@@ -21,6 +22,7 @@ namespace tileimage
         public List<Crater> craters = new List<Crater>();
         int ImageHeight;
         int ImageWidth;
+        public event statusChangedDelegate StatusEvent;
 
         public CraterEngine()
         {
@@ -44,7 +46,7 @@ namespace tileimage
                 int y = rng.Next(0, ImageHeight);
                 double alpha = rng.NextDouble();
                 int radius = (int)MathEx.Lerp(minRadius, maxRadius, MathEx.EaseIn(alpha, 6));
-                Crater crater = new Crater(x, y, radius) { bmp = debugbmp };
+                Crater crater = new Crater(x, y, radius, rng.Next()) { bmp = debugbmp };
                 craters.Add(crater);
 
             }
@@ -76,7 +78,10 @@ namespace tileimage
             foreach (var item in craters)
             {
                 drawCrater(item, true);
-                Console.WriteLine($"{i + 1}. {item.origin.X},{item.origin.Y} radius: {item.radius}");
+                if (StatusEvent != null)
+                {
+                    StatusEvent(this, $"Writing crater {i + 1}. X,Y: {item.origin.X},{item.origin.Y} radius: {item.radius}");
+                }
                 i++;
             }
         }

@@ -18,6 +18,7 @@ namespace tileimage
         List<Tile> tiles = new List<Tile>();
         int ImageHeight;
         int ImageWidth;
+        public event statusChangedDelegate StatusEvent;
 
         public TileEngine(FIBITMAP image, string dir)
         {
@@ -67,6 +68,12 @@ namespace tileimage
                     }
                     string tilename = string.Format(@"tile_x{0}_y{1}.raw", xindex, yindex);
                     tilename = Path.Combine(fpath, tilename);
+
+                    // status
+                    if (StatusEvent != null)
+                    {
+                        StatusEvent(this, $"Writing {tilename}");
+                    }
 
                     // clean up old file
                     if (File.Exists(tilename))
