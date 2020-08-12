@@ -24,7 +24,9 @@ namespace openheightmaptool
         {
             InitializeComponent();
 
-            this.Text = $"OpenTileVersion {Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
+            Version v = Assembly.GetExecutingAssembly().GetName().Version;
+
+            this.Text = $"OpenTileVersion v{v.Major}.{v.Minor}";
             pgOptions.SelectedObject = new Options() { VerticesPerTile = 256, Seed = 1, ZScale = 100, Craters = 0, CraterMinRadius = 10, CraterMaxRadius = 35 };
 
             pgOptions.PropertyValueChanged += PgOptions_PropertyValueChanged;
