@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace tileimage
 {
+
     public class Tile
     {
         public int x { get; set; } 

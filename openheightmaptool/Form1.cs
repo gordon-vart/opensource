@@ -26,7 +26,7 @@ namespace openheightmaptool
 
             Version v = Assembly.GetExecutingAssembly().GetName().Version;
 
-            this.Text = $"OpenTileVersion v{v.Major}.{v.Minor}";
+            this.Text = $"Open Heightmap Tool v{v.Major}.{v.Minor}";
             pgOptions.SelectedObject = new Options() { VerticesPerTile = 256, Seed = 1, ZScale = 100, Craters = 0, CraterMinRadius = 10, CraterMaxRadius = 35 };
 
             pgOptions.PropertyValueChanged += PgOptions_PropertyValueChanged;
@@ -85,7 +85,11 @@ namespace openheightmaptool
                     tslInfo.Text = $"Warning! The image provided it's not 16 bits per pixel. 16 bpp grayscale image needed.";
                 }
 
-                groupBox1.Text = $"{Path.GetFileName(o.Filename)}, {FreeImage.GetWidth(dib)}x{FreeImage.GetHeight(dib)}, {bpp} bpp";
+                // get height range
+                var range = dib.GetHeightRange();
+
+                // load image
+                groupBox1.Text = $"{Path.GetFileName(o.Filename)}, {FreeImage.GetWidth(dib)}x{FreeImage.GetHeight(dib)}, {bpp} bpp, low: {range.X}, high: {range.Y}";
                 Image i = Image.FromFile(o.Filename);
                 Bitmap bmp = new Bitmap(i);
 
@@ -223,5 +227,6 @@ namespace openheightmaptool
         {
             Process.Start("https://github.com/gordon-vart/opensource/wiki");
         }
+
     }
 }

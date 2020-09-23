@@ -37,6 +37,22 @@ namespace tileimage
 
 
 
+        public static Vector2 GetHeightRange(this FIBITMAP dib)
+        {
+            Vector2 range;
+            range.X = ushort.MaxValue;
+            range.Y = ushort.MinValue;
+            for (uint y = 0; y < FreeImage.GetHeight(dib); y++)
+            {
+                Scanline<ushort> line = new Scanline<ushort>(dib, (int)y);
+                for (int i = 0; i < line.Count; i++)
+                {
+                    range.X = Math.Min(line[i], range.X);
+                    range.Y = Math.Max(line[i], range.Y);
+                }
+            }
+            return range;
+        }
         public static ushort GetHeight(this FIBITMAP dib, Vector2 p)
         {
             uint ImageHeight = FreeImage.GetHeight(dib);
