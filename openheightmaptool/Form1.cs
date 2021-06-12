@@ -34,7 +34,7 @@ namespace openheightmaptool
 
         private void PgOptions_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
         {
-            RenderImage();
+            //RenderImage();
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -90,35 +90,39 @@ namespace openheightmaptool
 
                 // load image
                 groupBox1.Text = $"{Path.GetFileName(o.Filename)}, {FreeImage.GetWidth(dib)}x{FreeImage.GetHeight(dib)}, {bpp} bpp, low: {range.X}, high: {range.Y}";
-                Image i = Image.FromFile(o.Filename);
-                Bitmap bmp = new Bitmap(i);
 
-                Graphics g = Graphics.FromImage(bmp);
-                var tiles = MathEx.GetTiles(bmp.Width, bmp.Height, tileSizeResolution);
-                foreach (var item in tiles)
+                // preview 
+                if (!o.SkipPreview)
                 {
-                    g.DrawRectangle(Pens.LightGreen, item);
-                }
+                    Image i = Image.FromFile(o.Filename);
+                    Bitmap bmp = new Bitmap(i);
 
-                // show craters
-                // craterize
-                if (o.Craters > 0)
-                {
-                    ce = new CraterEngine() { dib = dib, minRadius = o.CraterMinRadius, maxRadius = o.CraterMaxRadius, numCraters = o.Craters, seed = o.Seed };
-                    ce.BuildCraters();
-
-                    foreach (var crater in ce.craters)
+                    Graphics g = Graphics.FromImage(bmp);
+                    var tiles = MathEx.GetTiles(bmp.Width, bmp.Height, tileSizeResolution);
+                    foreach (var item in tiles)
                     {
-                        foreach (var item in crater.craterRidgePoints)
+                        g.DrawRectangle(Pens.LightGreen, item);
+                    }
+
+                    // show craters
+                    // craterize
+                    if (o.Craters > 0)
+                    {
+                        ce = new CraterEngine() { dib = dib, minRadius = o.CraterMinRadius, maxRadius = o.CraterMaxRadius, numCraters = o.Craters, seed = o.Seed };
+                        ce.BuildCraters();
+
+                        foreach (var crater in ce.craters)
                         {
-                            bmp.SetPixel((int)item.X, (int)item.Y, Color.Red);
+                            foreach (var item in crater.craterRidgePoints)
+                            {
+                                bmp.SetPixel((int)item.X, (int)item.Y, Color.Red);
+                            }
                         }
                     }
+
+                    // show image
+                    pictureBox1.Image = bmp;
                 }
-
-
-                // show image
-                pictureBox1.Image = bmp;
 
                 // free
                 FreeImage.Unload(dib);

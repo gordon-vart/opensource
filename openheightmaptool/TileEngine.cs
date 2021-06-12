@@ -39,25 +39,31 @@ namespace tileimage
             int cx, cy;
             cx = cy = 0;
 
-            string fpath = Path.Combine(path, "tiles");
-            Directory.CreateDirectory(fpath);
+            string tilePath = Path.Combine(path, "tiles");
+            Directory.CreateDirectory(tilePath);
+            string pngPath = Path.Combine(tilePath, "png");
+            Directory.CreateDirectory(pngPath);
 
 
             for (int y = 0; y < tilecount; y++)
             {
                 for (int x = 0; x < tilecount; x++)
                 {
+                    // write png
+                    string pngfile = string.Format(@"tile_x{0}_y{1}.png", xindex, yindex);
+                    pngfile = Path.Combine(pngPath, pngfile);
                     FIBITMAP section = FreeImage.Copy(dib, cx, cy, cx + tileSizeResolution, cy + tileSizeResolution);
-                    
+                    FreeImage.Save(FREE_IMAGE_FORMAT.FIF_PNG, section, pngfile, FREE_IMAGE_SAVE_FLAGS.PNG_Z_DEFAULT_COMPRESSION);
+
                     int count = tileSizeResolution * tileSizeResolution;
                     ushort[] pixeldata = new ushort[count];
                     int idx = 0;
-                                        
+
                     // Note: dib is stored upside down
                     for (int k = (int)FreeImage.GetHeight(section) - 1; k >= 0; k--)
                     {
                         List<int> row = new List<int> { };
-                        
+
                         Scanline<ushort> line = new Scanline<ushort>(section, k);
                         foreach (ushort pixel in line)
                         {
@@ -67,7 +73,7 @@ namespace tileimage
 
                     }
                     string tilename = string.Format(@"tile_x{0}_y{1}.raw", xindex, yindex);
-                    tilename = Path.Combine(fpath, tilename);
+                    tilename = Path.Combine(tilePath, tilename);
 
                     // status
                     if (StatusEvent != null)
@@ -81,6 +87,32 @@ namespace tileimage
                         File.Delete(tilename);
                     }
 
+                    //unsafe
+                    //{
+
+
+                    //    string bmptilename = string.Format(@"tile_x{0}_y{1}.png", xindex, yindex);
+                    //    bmptilename = Path.Combine(fpath, bmptilename);
+                    //    Bitmap b = new Bitmap(tileSizeResolution + 1, tileSizeResolution + 1, PixelFormat.Format48bppRgb);
+                    //    var bmd = b.LockBits(new Rectangle(0, 0, tileSizeResolution, tileSizeResolution), ImageLockMode.ReadWrite, PixelFormat.Format48bppRgb);
+
+                    //    byte bitsPerPixel = 48;
+                    //    ushort* scan0 = (ushort*)bmd.Scan0.ToPointer();
+
+                    //    for (int i = 0; i < pixeldata.Length; i++)
+                    //    {
+                    //        ushort* data = scan0 + i * (bitsPerPixel / 16);
+                    //        //*data = pixeldata[offset];
+
+                    //        //data is a pointer to the first 16 bits of the 48-bit color data
+                    //        data[0] = pixeldata[i];
+                    //        data[1] = pixeldata[i];
+                    //        data[2] = pixeldata[i];
+                    //    }
+                    //    b.UnlockBits(bmd);
+                    //    //Image ib = Image.FromHbitmap(b.GetHbitmap());
+                    //    b.Save(bmptilename, ImageFormat.Png);
+                    //}
                     using (Stream fs = File.OpenWrite(tilename))
                     {
                         using (BinaryWriter bw = new BinaryWriter(fs))
@@ -89,8 +121,6 @@ namespace tileimage
                             {
                                 bw.Write(pixel);
                             }
-
-
                             bw.Flush();
                         }
                         fs.Close();

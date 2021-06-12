@@ -15,6 +15,11 @@ namespace tileimage
         [Description("The filename of the heightmap image.")]
         public string Filename { get; set; }
 
+        [Category("Image")]
+        [Description("Skip the preview of the image.")]
+        public bool SkipPreview { get; set; }
+
+
         [Category("Tiling")]
         [Description("The number of vertices per tile (must be a power of 2). i.e. . 8, 16, 32, 64, 128, 256, etc...")]
         public int VerticesPerTile { get; set; }
