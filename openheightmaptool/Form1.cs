@@ -34,7 +34,7 @@ namespace openheightmaptool
 
         private void PgOptions_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
         {
-            //RenderImage();
+            RenderImage();
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
